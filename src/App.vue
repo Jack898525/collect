@@ -18,4 +18,8 @@ import { ref } from 'vue'
 .van-tab {
   font-weight: 500;
 }
+/* 强制隐藏 Trae 的自带水印图标 */
+#trae-badge-plugin {
+  display: none !important;
+}
 </style>
