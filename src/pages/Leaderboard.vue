@@ -50,7 +50,7 @@ const fetchLeaderboard = async () => {
     
     // 拉取所有状态为 visible 的记录，用于统计总回答数
     const { data: allRecords, error: allRecordsError } = await supabase
-      .from('qa_records')
+      .from('qa_records_public')
       .select('student_id, nickname, is_adopted')
       .eq('status', 'visible')
 

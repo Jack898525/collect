@@ -17,36 +17,14 @@ const filteredQAList = computed(() => {
   return qaList.value.filter(qa => {
     const q = qa.question ? qa.question.toLowerCase() : ''
     const a = qa.answer ? qa.answer.toLowerCase() : ''
-    const name = qa.student_name ? qa.student_name.toLowerCase() : ''
     const nick = qa.nickname ? qa.nickname.toLowerCase() : ''
-    return q.includes(query) || a.includes(query) || name.includes(query) || nick.includes(query)
+    return q.includes(query) || a.includes(query) || nick.includes(query)
   })
 })
 
-// 自定义密码弹窗逻辑
-const password = ref('')
-const showPasswordDialog = ref(true)
-
 onMounted(() => {
-  // 不再使用函数式调用 showDialog，因为我们已经在 template 中写了 <van-dialog> 组件
-  // 只需要让 showPasswordDialog 初始为 true 即可显示 template 中的弹窗
+  fetchAllQA()
 })
-
-const beforeClose = (action: string) => {
-  if (action === 'cancel') {
-    router.replace('/')
-    return true
-  }
-  
-  if (password.value === 'Admin2025') {
-    fetchAllQA()
-    return true
-  } else {
-    showToast('口令错误')
-    password.value = ''
-    return false // 阻止弹窗关闭
-  }
-}
 
 // 获取所有数据
 const fetchAllQA = async () => {
@@ -54,7 +32,7 @@ const fetchAllQA = async () => {
     loading.value = true
     const { data, error } = await supabase
       .from('qa_records')
-      .select('*')
+      .select('id, student_id, nickname, category, sub_category, question, answer, status, is_adopted, is_pinned, created_at')
       .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
 
@@ -175,37 +153,15 @@ const formatTime = (timeStr: string) => {
 
 <template>
   <div class="min-h-screen bg-gray-50 pb-20">
-    <!-- 密码验证弹窗 -->
-    <van-dialog 
-      v-model:show="showPasswordDialog" 
-      title="管理员验证" 
-      show-cancel-button
-      :before-close="beforeClose"
-      confirm-button-text="进入"
-      cancel-button-text="返回首页"
-      confirm-button-color="#3B82F6"
-    >
-      <div class="p-4 text-center">
-        <p class="text-sm text-gray-500 mb-4">请输入管理员口令进入后台</p>
-        <van-field
-          v-model="password"
-          type="password"
-          placeholder="请输入管理员口令"
-          input-align="center"
-          class="border border-gray-200 rounded-lg"
-        />
-      </div>
-    </van-dialog>
-
     <!-- 后台主界面 -->
-    <div v-if="!showPasswordDialog" class="safe-area-top">
-      <van-nav-bar title="数据管理后台" class="sticky top-0 z-50 bg-white/90 backdrop-blur-md" />
+    <div class="safe-area-top">
+      <van-nav-bar title="内部处理页" class="sticky top-0 z-50 bg-white/90 backdrop-blur-md" />
 
       <!-- 搜索框区域 -->
       <div class="bg-white px-3 py-2 sticky top-[46px] z-40 border-b border-gray-100 shadow-sm">
         <van-search
           v-model="searchQuery"
-          placeholder="搜索问题、回答、姓名或昵称"
+          placeholder="搜索问题、回答或昵称"
           background="transparent"
           shape="round"
           clearable
@@ -237,10 +193,8 @@ const formatTime = (timeStr: string) => {
           <!-- 卡片头部信息 -->
           <div class="flex justify-between items-start mb-2">
             <div class="text-xs text-gray-500">
-              <span class="font-bold text-gray-700 mr-2">{{ qa.student_name }}</span>
-              <span>{{ qa.student_id }}</span>
-              <span class="mx-1">·</span>
-              <span>{{ qa.nickname }}</span>
+              <span class="font-bold text-gray-700 mr-2">学号: {{ qa.student_id }}</span>
+              <span>昵称: {{ qa.nickname }}</span>
             </div>
             <div class="flex space-x-1 text-[10px]">
               <span 
@@ -315,12 +269,5 @@ const formatTime = (timeStr: string) => {
 <style scoped>
 :deep(.van-nav-bar__title) {
   font-weight: bold;
-}
-:deep(.van-dialog__header) {
-  font-weight: bold;
-  font-size: 18px;
-}
-:deep(.van-dialog__cancel) {
-  color: #64748b;
 }
 </style>

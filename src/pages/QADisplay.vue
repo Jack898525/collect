@@ -32,7 +32,7 @@ const fetchQAList = async () => {
   try {
     loading.value = true
     const { data, error } = await supabase
-      .from('qa_records')
+      .from('qa_records_public')
       .select('id, nickname, category, sub_category, question, answer, is_adopted, is_pinned, created_at')
       .eq('status', 'visible')
       .order('is_pinned', { ascending: false })
