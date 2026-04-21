@@ -81,14 +81,18 @@ defineExpose({
 <template>
   <div class="bg-gray-50 min-h-screen safe-area-bottom pb-20">
     <!-- 搜索框区域 -->
-    <div class="bg-white px-3 py-2 sticky top-[44px] z-50 border-b border-gray-100 shadow-sm">
+    <div class="bg-white px-4 py-3 sticky top-[44px] z-50 border-b border-gray-100 shadow-sm flex flex-col space-y-2">
+      <div class="text-xs font-bold text-primary flex items-center">
+        <van-icon name="search" class="mr-1 text-sm" />
+        回答前请先搜索有无重复回答
+      </div>
       <van-search
         v-model="searchQuery"
-        placeholder="搜索问题或回答关键词，避免重复提问"
-        background="transparent"
+        placeholder="搜索问题或回答关键词"
+        background="#F3F4F6"
         shape="round"
         clearable
-        class="!p-0"
+        class="!p-0 !bg-transparent search-bar-custom"
       />
     </div>
 
@@ -122,7 +126,7 @@ defineExpose({
     </div>
 
     <!-- 分类筛选横向滚动条 -->
-    <div class="bg-white px-4 py-3 sticky top-[98px] z-40 border-b border-gray-100/50 shadow-sm/50 overflow-x-auto whitespace-nowrap hide-scrollbar flex space-x-3">
+    <div class="bg-white px-4 py-3 sticky top-[138px] z-40 border-b border-gray-100/50 shadow-sm/50 overflow-x-auto whitespace-nowrap hide-scrollbar flex space-x-3">
       <div 
         v-for="cat in categoryTabs" 
         :key="cat"
@@ -208,7 +212,21 @@ defineExpose({
   display: none;
 }
 .hide-scrollbar {
-  -ms-overflow-style: none;
   scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* 自定义搜索框更醒目的样式 */
+.search-bar-custom {
+  border-radius: 9999px;
+  border: 2px solid rgba(59, 130, 246, 0.2); /* 浅蓝色边框 */
+  transition: all 0.3s ease;
+}
+.search-bar-custom:focus-within {
+  border-color: #3B82F6; /* 获取焦点时加深蓝边框 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+:deep(.van-search__content) {
+  background-color: transparent !important;
 }
 </style>
