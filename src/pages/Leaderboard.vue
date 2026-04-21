@@ -152,6 +152,7 @@ const getRankStyle = (rank: number) => {
     </div>
     
     <div class="mt-6 text-center text-xs text-gray-400 space-y-1">
+      <p class="text-amber-500 font-bold mb-2">⏰ 截止排名时间为 4月24日晚上 23:00</p>
       <p>排行榜每天凌晨更新</p>
       <p>参与问答，分享经验，你也能上榜！</p>
     </div>
