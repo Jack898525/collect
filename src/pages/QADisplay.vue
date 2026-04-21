@@ -7,6 +7,7 @@ const { categories } = useMockData()
 const activeCategory = ref('全部')
 const qaList = ref<any[]>([])
 const loading = ref(true)
+const isNoticeExpanded = ref(true) // 控制公告是否展开
 
 // 展平所有一级分类用于顶部筛选栏
 const categoryTabs = computed(() => {
@@ -64,6 +65,33 @@ defineExpose({
 
 <template>
   <div class="bg-gray-50 min-h-screen safe-area-bottom pb-20">
+    <!-- 自定义可展开收起的多行公告 -->
+    <div class="bg-[#fef3c7] text-[#d97706] px-4 py-3 border-b border-amber-200/50 shadow-sm relative">
+      <div class="flex items-start">
+        <van-icon name="volume-o" class="mt-0.5 mr-2 text-[16px]" />
+        <div class="flex-1 text-[13px] leading-relaxed">
+          <div class="font-bold mb-1">【系统公告】</div>
+          <div v-if="isNoticeExpanded" class="space-y-1.5 pb-4">
+            <p>1. 管理员后台不定时上线采纳优质答案，推荐回答详细，问题描述清楚更容易被采纳；</p>
+            <p>2. 部分一直没被采纳的回答就是过于简短了，后面的同学们可以对回答进行补充，相同问题将优先采纳详细且时间发布靠前的回答；</p>
+            <p>3. 本回答收集禁止包含违反校规的元素，最终采纳解释权归训练平台所有。</p>
+          </div>
+          <div v-else class="truncate text-[#d97706]/80 pr-10">
+            1. 管理员后台不定时上线采纳优质答案...
+          </div>
+        </div>
+      </div>
+      
+      <!-- 展开/收起按钮 -->
+      <div 
+        class="absolute bottom-2 right-4 text-xs font-medium bg-[#fef3c7] px-1 flex items-center space-x-1 cursor-pointer"
+        @click="isNoticeExpanded = !isNoticeExpanded"
+      >
+        <span>{{ isNoticeExpanded ? '收起' : '展开' }}</span>
+        <van-icon :name="isNoticeExpanded ? 'arrow-up' : 'arrow-down'" />
+      </div>
+    </div>
+
     <!-- 分类筛选横向滚动条 -->
     <div class="bg-white px-4 py-3 sticky top-[44px] z-40 border-b border-gray-100/50 shadow-sm/50 overflow-x-auto whitespace-nowrap hide-scrollbar flex space-x-3">
       <div 
