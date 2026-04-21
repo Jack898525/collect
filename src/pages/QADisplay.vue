@@ -8,6 +8,7 @@ const activeCategory = ref('全部')
 const qaList = ref<any[]>([])
 const loading = ref(true)
 const isNoticeExpanded = ref(true) // 控制公告是否展开
+const searchQuery = ref('') // 搜索关键词
 
 // 展平所有一级分类用于顶部筛选栏
 const categoryTabs = computed(() => {
@@ -41,10 +42,24 @@ onMounted(() => {
 
 // 筛选后的 QA 列表
 const filteredQAs = computed(() => {
-  if (activeCategory.value === '全部') {
-    return qaList.value
+  let result = qaList.value
+
+  // 1. 分类过滤
+  if (activeCategory.value !== '全部') {
+    result = result.filter(qa => qa.category === activeCategory.value)
   }
-  return qaList.value.filter(qa => qa.category === activeCategory.value)
+
+  // 2. 关键词搜索过滤
+  const query = searchQuery.value.trim().toLowerCase()
+  if (query) {
+    result = result.filter(qa => {
+      const q = qa.question ? qa.question.toLowerCase() : ''
+      const a = qa.answer ? qa.answer.toLowerCase() : ''
+      return q.includes(query) || a.includes(query)
+    })
+  }
+
+  return result
 })
 
 // 格式化时间辅助函数
@@ -65,6 +80,18 @@ defineExpose({
 
 <template>
   <div class="bg-gray-50 min-h-screen safe-area-bottom pb-20">
+    <!-- 搜索框区域 -->
+    <div class="bg-white px-3 py-2 sticky top-[44px] z-50 border-b border-gray-100 shadow-sm">
+      <van-search
+        v-model="searchQuery"
+        placeholder="搜索问题或回答关键词，避免重复提问"
+        background="transparent"
+        shape="round"
+        clearable
+        class="!p-0"
+      />
+    </div>
+
     <!-- 自定义可展开收起的多行公告 -->
     <div class="bg-[#fef3c7] text-[#d97706] px-4 py-3 border-b border-amber-200/50 shadow-sm relative">
       <div class="flex items-start">
@@ -72,13 +99,14 @@ defineExpose({
         <div class="flex-1 text-[13px] leading-relaxed">
           <div class="font-bold mb-1">【系统公告】</div>
           <div v-if="isNoticeExpanded" class="space-y-1.5 pb-4">
-            <p>1. 管理员后台不定时上线采纳优质答案，推荐回答详细，问题描述清楚更容易被采纳；</p>
-            <p>2. 部分一直没被采纳的回答就是过于简短了，后面的同学们可以对回答进行补充，相同问题将优先采纳详细且时间发布靠前的回答；</p>
-            <p>3. 本回答收集禁止包含违反校规的元素，最终采纳解释权归训练平台所有。</p>
-            <p class="font-bold">4. 截止排名时间为 4月24日晚上23:00。</p>
+            <p>1. 回答前先点击搜索框查询你要发布问题的关键词，如果已经有被采纳的可以换一个问题，也可以选择更详细一下该回答，避免重复数据。</p>
+            <p>2. 管理员后台不定时上线采纳优质答案，推荐回答详细，问题描述清楚更容易被采纳；</p>
+            <p>3. 部分一直没被采纳的回答就是过于简短了，后面的同学们可以对回答进行补充，相同问题将优先采纳详细且时间发布靠前的回答；</p>
+            <p>4. 本回答收集禁止包含违反校规的元素，最终采纳解释权归训练平台所有。</p>
+            <p class="font-bold">5. 截止排名时间为 4月24日晚上23:00。</p>
           </div>
           <div v-else class="truncate text-[#d97706]/80 pr-10">
-            1. 管理员后台不定时上线采纳优质答案...
+            1. 回答前先点击搜索框查询...
           </div>
         </div>
       </div>
@@ -94,7 +122,7 @@ defineExpose({
     </div>
 
     <!-- 分类筛选横向滚动条 -->
-    <div class="bg-white px-4 py-3 sticky top-[44px] z-40 border-b border-gray-100/50 shadow-sm/50 overflow-x-auto whitespace-nowrap hide-scrollbar flex space-x-3">
+    <div class="bg-white px-4 py-3 sticky top-[98px] z-40 border-b border-gray-100/50 shadow-sm/50 overflow-x-auto whitespace-nowrap hide-scrollbar flex space-x-3">
       <div 
         v-for="cat in categoryTabs" 
         :key="cat"
@@ -119,7 +147,7 @@ defineExpose({
 
       <div v-else-if="filteredQAs.length === 0" class="py-20 flex flex-col items-center justify-center text-gray-400">
         <van-icon name="info-o" size="48" class="mb-3 text-gray-300" />
-        <p>该分类下暂无经验分享</p>
+        <p>{{ searchQuery ? '未找到相关经验分享' : '该分类下暂无经验分享' }}</p>
       </div>
 
       <div 
