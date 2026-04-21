@@ -135,6 +135,17 @@ const categories = [
       { text: '时间规划', value: '时间规划' },
       { text: '其他', value: '其他' }
     ]
+  },
+  {
+    text: '研究生专区',
+    value: '研究生专区',
+    children: [
+      { text: '科研指导', value: '科研指导' },
+      { text: '导师沟通', value: '导师沟通' },
+      { text: '文献阅读', value: '文献阅读' },
+      { text: '论文写作', value: '论文写作' },
+      { text: '其他', value: '其他' }
+    ]
   }
 ]
 

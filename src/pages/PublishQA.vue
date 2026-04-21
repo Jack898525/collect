@@ -176,9 +176,12 @@ const onSubmit = async () => {
           已自动加载历史信息
         </div>
         
-        <div class="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+        <div class="px-4 py-3 bg-gray-50/50 border-b border-gray-100 flex flex-col justify-center space-y-1">
           <span class="text-sm font-bold text-gray-700">身份信息</span>
-          <span class="text-[10px] text-gray-400">姓名学号仅后台可见，前端不展示</span>
+          <span class="text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md self-start font-medium flex items-center">
+            <van-icon name="info-o" class="mr-1" />
+            姓名学号仅用于后台发放奖励，前端严格保密，仅展示您的昵称
+          </span>
         </div>
         <van-field
           v-model="userInfo.name"
