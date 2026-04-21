@@ -25,6 +25,7 @@ const fetchQAList = async () => {
       .from('qa_records')
       .select('*')
       .eq('status', 'visible')
+      .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -158,8 +159,13 @@ defineExpose({
         v-else
         v-for="qa in filteredQAs" 
         :key="qa.id"
-        class="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow"
+        class="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative"
       >
+        <!-- 置顶徽章 -->
+        <div v-if="qa.is_pinned" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm font-bold z-10 flex items-center">
+          <van-icon name="fire" class="mr-0.5" /> 置顶
+        </div>
+
         <!-- 卡片顶部：分类标签与徽章 -->
         <div class="flex justify-between items-center mb-3">
           <div class="flex items-center space-x-2 text-xs font-medium">
