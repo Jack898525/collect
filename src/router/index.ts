@@ -10,7 +10,7 @@ const routes = [
     component: HomePage,
   },
   {
-    path: '/internal-review-7f3k9xq2',
+    path: '/jjjj-7f3k9xq2',
     name: 'page-x7',
     component: AdminView,
   },
