@@ -7,7 +7,7 @@ const { categories } = useMockData()
 const activeCategory = ref('全部')
 const qaList = ref<any[]>([])
 const loading = ref(true)
-const isNoticeExpanded = ref(true) // 控制公告是否展开
+const isNoticeExpanded = ref(false) // 默认收起
 const searchQuery = ref('') // 搜索关键词
 
 // 展平所有一级分类用于顶部筛选栏
@@ -109,8 +109,8 @@ defineExpose({
             <p>4. 本回答收集禁止包含违反校规的元素，最终采纳解释权归训练平台所有。</p>
             <p class="font-bold">5. 截止排名时间为 4月24日晚上23:00。</p>
           </div>
-          <div v-else class="truncate text-[#d97706]/80 pr-10">
-            1. 回答前先点击搜索框查询...
+          <div v-else class="truncate text-[#d97706] pr-10 pb-2">
+            1. 回答前先点击搜索框查询你要发布问题的关键词，如果已经有被采纳的可以换一个问题...
           </div>
         </div>
       </div>
@@ -126,7 +126,7 @@ defineExpose({
     </div>
 
     <!-- 分类筛选横向滚动条 -->
-    <div class="bg-white px-4 py-3 sticky top-[138px] z-40 border-b border-gray-100/50 shadow-sm/50 overflow-x-auto whitespace-nowrap hide-scrollbar flex space-x-3">
+    <div class="bg-white px-4 py-3 sticky top-[110px] z-40 border-b border-gray-100/50 shadow-sm/50 overflow-x-auto whitespace-nowrap hide-scrollbar flex space-x-3">
       <div 
         v-for="cat in categoryTabs" 
         :key="cat"
