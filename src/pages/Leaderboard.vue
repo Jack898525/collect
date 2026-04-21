@@ -6,7 +6,7 @@ import { showToast } from 'vant'
 interface LeaderboardUser {
   rank: number
   nickname: string
-  studentName: string // 隐藏字段，用于搜索
+  studentId: string // 隐藏字段，用于搜索
   adoptedCount: number
   totalAnswers: number
 }
@@ -24,7 +24,7 @@ const onSearch = () => {
     return
   }
   
-  const found = leaderboardList.value.find(user => user.studentName === searchQuery.value.trim())
+  const found = leaderboardList.value.find(user => user.studentId === searchQuery.value.trim())
   if (found) {
     searchResult.value = found
   } else {
@@ -44,7 +44,7 @@ const fetchLeaderboard = async () => {
     // 拉取所有状态为 visible 的记录，用于统计总回答数
     const { data: allRecords, error: allRecordsError } = await supabase
       .from('qa_records')
-      .select('student_id, student_name, nickname, is_adopted')
+      .select('student_id, nickname, is_adopted')
       .eq('status', 'visible')
 
     if (allRecordsError) throw allRecordsError
@@ -56,15 +56,14 @@ const fetchLeaderboard = async () => {
     }
 
     // 按 student_id 分组统计
-    const userStatsMap = new Map<string, { nickname: string, studentName: string, adoptedCount: number, totalAnswers: number }>()
+    const userStatsMap = new Map<string, { nickname: string, adoptedCount: number, totalAnswers: number }>()
 
     allRecords.forEach(record => {
-      const { student_id, student_name, nickname, is_adopted } = record
+      const { student_id, nickname, is_adopted } = record
       
       if (!userStatsMap.has(student_id)) {
         userStatsMap.set(student_id, {
           nickname,
-          studentName: student_name,
           adoptedCount: 0,
           totalAnswers: 0
         })
@@ -79,13 +78,13 @@ const fetchLeaderboard = async () => {
     })
 
     // 转换为数组并排序
-    const sortedList: LeaderboardUser[] = Array.from(userStatsMap.values())
-      .filter(user => user.adoptedCount > 0) // 只有采纳数大于0才上榜
-      .sort((a, b) => b.adoptedCount - a.adoptedCount) // 按采纳数从高到低排序
-      .map((user, index) => ({
+    const sortedList: LeaderboardUser[] = Array.from(userStatsMap.entries())
+      .filter(([_, user]) => user.adoptedCount > 0) // 只有采纳数大于0才上榜
+      .sort((a, b) => b[1].adoptedCount - a[1].adoptedCount) // 按采纳数从高到低排序
+      .map(([studentId, user], index) => ({
         rank: index + 1,
         nickname: user.nickname,
-        studentName: user.studentName,
+        studentId: studentId,
         adoptedCount: user.adoptedCount,
         totalAnswers: user.totalAnswers
       }))
@@ -126,7 +125,7 @@ const getRankStyle = (rank: number) => {
         <van-search
           v-model="searchQuery"
           show-action
-          placeholder="请输入真实姓名查询你的排名"
+          placeholder="请输入学号查询你的排名"
           @search="onSearch"
           @clear="onClearSearch"
         >
