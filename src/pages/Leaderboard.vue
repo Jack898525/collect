@@ -1,16 +1,40 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { supabase } from '../utils/supabase'
+import { showToast } from 'vant'
 
 interface LeaderboardUser {
   rank: number
   nickname: string
+  studentName: string // 隐藏字段，用于搜索
   adoptedCount: number
   totalAnswers: number
 }
 
 const leaderboardList = ref<LeaderboardUser[]>([])
 const loading = ref(true)
+
+// 搜索相关状态
+const searchQuery = ref('')
+const searchResult = ref<LeaderboardUser | null | 'NOT_FOUND'>(null)
+
+const onSearch = () => {
+  if (!searchQuery.value.trim()) {
+    searchResult.value = null
+    return
+  }
+  
+  const found = leaderboardList.value.find(user => user.studentName === searchQuery.value.trim())
+  if (found) {
+    searchResult.value = found
+  } else {
+    searchResult.value = 'NOT_FOUND'
+  }
+}
+
+const onClearSearch = () => {
+  searchResult.value = null
+}
 
 // 从 Supabase 拉取数据并计算排行榜
 const fetchLeaderboard = async () => {
@@ -20,7 +44,7 @@ const fetchLeaderboard = async () => {
     // 拉取所有状态为 visible 的记录，用于统计总回答数
     const { data: allRecords, error: allRecordsError } = await supabase
       .from('qa_records')
-      .select('student_id, nickname, is_adopted')
+      .select('student_id, student_name, nickname, is_adopted')
       .eq('status', 'visible')
 
     if (allRecordsError) throw allRecordsError
@@ -32,14 +56,15 @@ const fetchLeaderboard = async () => {
     }
 
     // 按 student_id 分组统计
-    const userStatsMap = new Map<string, { nickname: string, adoptedCount: number, totalAnswers: number }>()
+    const userStatsMap = new Map<string, { nickname: string, studentName: string, adoptedCount: number, totalAnswers: number }>()
 
     allRecords.forEach(record => {
-      const { student_id, nickname, is_adopted } = record
+      const { student_id, student_name, nickname, is_adopted } = record
       
       if (!userStatsMap.has(student_id)) {
         userStatsMap.set(student_id, {
           nickname,
+          studentName: student_name,
           adoptedCount: 0,
           totalAnswers: 0
         })
@@ -60,6 +85,7 @@ const fetchLeaderboard = async () => {
       .map((user, index) => ({
         rank: index + 1,
         nickname: user.nickname,
+        studentName: user.studentName,
         adoptedCount: user.adoptedCount,
         totalAnswers: user.totalAnswers
       }))
@@ -67,6 +93,7 @@ const fetchLeaderboard = async () => {
     leaderboardList.value = sortedList
   } catch (err) {
     console.error('获取排行榜数据失败:', err)
+    showToast('获取排行榜数据失败')
   } finally {
     loading.value = false
   }
@@ -92,7 +119,55 @@ const getRankStyle = (rank: number) => {
 </script>
 
 <template>
-  <div class="p-4 safe-area-bottom pb-20">
+  <div class="p-4 safe-area-bottom pb-20 space-y-4">
+    <!-- 搜索功能区 -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <form action="/">
+        <van-search
+          v-model="searchQuery"
+          show-action
+          placeholder="请输入真实姓名查询你的排名"
+          @search="onSearch"
+          @clear="onClearSearch"
+        >
+          <template #action>
+            <div @click="onSearch" class="text-primary font-medium">查询</div>
+          </template>
+        </van-search>
+      </form>
+
+      <!-- 搜索结果展示 -->
+      <div v-if="searchResult" class="px-5 py-4 bg-blue-50/50 border-t border-gray-100">
+        <div v-if="searchResult === 'NOT_FOUND'" class="text-center text-sm text-gray-500 py-2">
+          未查询到“{{ searchQuery }}”的排名，可能是还没有被采纳的经验，继续加油哦！
+        </div>
+        <div v-else class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div 
+              class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
+              :class="getRankStyle(searchResult.rank)"
+            >
+              {{ searchResult.rank }}
+            </div>
+            <div class="flex flex-col">
+              <span class="font-semibold text-gray-800 text-base">
+                {{ searchResult.nickname }}
+                <span class="text-xs text-gray-400 font-normal ml-1">(你的排名)</span>
+              </span>
+              <span class="text-xs text-gray-400 mt-0.5">总回答：{{ searchResult.totalAnswers }}</span>
+            </div>
+          </div>
+          <div class="flex flex-col items-end">
+            <div class="flex items-center space-x-1 text-primary">
+              <span class="text-xl font-bold">{{ searchResult.adoptedCount }}</span>
+              <span class="text-xs font-medium">分</span>
+            </div>
+            <span class="text-[10px] text-gray-400 mt-0.5">获采纳数</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 排行榜卡片 -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
       <!-- 头部栏 -->
@@ -153,7 +228,6 @@ const getRankStyle = (rank: number) => {
     
     <div class="mt-6 text-center text-xs text-gray-400 space-y-1">
       <p class="text-amber-500 font-bold mb-2">⏰ 截止排名时间为 4月24日晚上 23:00</p>
-      <p>排行榜每天凌晨更新</p>
       <p>参与问答，分享经验，你也能上榜！</p>
     </div>
   </div>
