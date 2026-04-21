@@ -16,15 +16,22 @@ const loading = ref(true)
 
 // 搜索相关状态
 const searchQuery = ref('')
-const searchResult = ref<LeaderboardUser | null | 'NOT_FOUND'>(null)
+const searchResult = ref<LeaderboardUser | null | 'NOT_FOUND' | 'INVALID_INPUT'>(null)
 
 const onSearch = () => {
-  if (!searchQuery.value.trim()) {
+  const query = searchQuery.value.trim()
+  if (!query) {
     searchResult.value = null
     return
   }
+
+  // 简单的学号校验：检查是否全部为数字
+  if (!/^\d+$/.test(query)) {
+    searchResult.value = 'INVALID_INPUT'
+    return
+  }
   
-  const found = leaderboardList.value.find(user => user.studentId === searchQuery.value.trim())
+  const found = leaderboardList.value.find(user => user.studentId === query)
   if (found) {
     searchResult.value = found
   } else {
@@ -137,8 +144,12 @@ const getRankStyle = (rank: number) => {
 
       <!-- 搜索结果展示 -->
       <div v-if="searchResult" class="px-5 py-4 bg-blue-50/50 border-t border-gray-100">
-        <div v-if="searchResult === 'NOT_FOUND'" class="text-center text-sm text-gray-500 py-2">
-          未查询到“{{ searchQuery }}”的排名，可能是还没有被采纳的经验，继续加油哦！
+        <div v-if="searchResult === 'INVALID_INPUT'" class="text-center text-sm text-red-500 py-2 font-medium flex items-center justify-center">
+          <van-icon name="warning-o" class="mr-1" />
+          请输入正确的学号进行查询
+        </div>
+        <div v-else-if="searchResult === 'NOT_FOUND'" class="text-center text-sm text-gray-500 py-2">
+          未查询到学号“{{ searchQuery }}”的排名，可能是还没有被采纳的经验，继续加油哦！
         </div>
         <div v-else class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
