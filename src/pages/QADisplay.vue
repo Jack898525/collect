@@ -9,6 +9,16 @@ const qaList = ref<any[]>([])
 const loading = ref(true)
 const isNoticeExpanded = ref(false) // 默认收起
 const searchQuery = ref('') // 搜索关键词
+const expandedQAs = ref<Set<string>>(new Set()) // 记录展开回答的 ID 集合
+
+// 切换回答展开/收起状态
+const toggleQAExpand = (id: string) => {
+  if (expandedQAs.value.has(id)) {
+    expandedQAs.value.delete(id)
+  } else {
+    expandedQAs.value.add(id)
+  }
+}
 
 // 展平所有一级分类用于顶部筛选栏
 const categoryTabs = computed(() => {
@@ -189,10 +199,25 @@ defineExpose({
             <span class="text-primary mr-1">Q:</span>
             {{ qa.question }}
           </h3>
-          <p class="text-[15px] text-gray-600 leading-relaxed">
-            <span class="text-secondary font-bold mr-1">A:</span>
-            {{ qa.answer }}
-          </p>
+          <div class="relative">
+            <p 
+              class="text-[15px] text-gray-600 leading-relaxed whitespace-pre-wrap transition-all duration-300"
+              :class="{ 'line-clamp-5': !expandedQAs.has(qa.id) }"
+            >
+              <span class="text-secondary font-bold mr-1">A:</span>
+              {{ qa.answer }}
+            </p>
+            
+            <!-- 展开/收起按钮 -->
+            <div 
+              v-if="qa.answer && qa.answer.length > 150" 
+              class="mt-2 text-primary text-sm font-medium flex items-center cursor-pointer select-none w-fit"
+              @click="toggleQAExpand(qa.id)"
+            >
+              {{ expandedQAs.has(qa.id) ? '收起回答' : '展开全文' }}
+              <van-icon :name="expandedQAs.has(qa.id) ? 'arrow-up' : 'arrow-down'" class="ml-1" />
+            </div>
+          </div>
         </div>
 
         <!-- 底部信息：发布者和时间 -->
@@ -234,5 +259,13 @@ defineExpose({
 }
 :deep(.van-search__content) {
   background-color: transparent !important;
+}
+
+/* 多行文本省略样式 */
+.line-clamp-5 {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
 }
 </style>
