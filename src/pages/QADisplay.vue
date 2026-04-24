@@ -17,7 +17,7 @@ interface QARecord {
   likes?: number
 }
 
-const RANKING_DEADLINE = '2026-04-24T23:00:00+08:00'
+const RANKING_DEADLINE = '2026-04-25T12:00:00+08:00'
 
 const { categories } = useMockData()
 const activeCategory = ref('全部')
