@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
-import { buildLeaderboard, type LeaderboardRow, type ScoreRecord } from '../lib/leaderboard'
+import {
+  buildLeaderboard,
+  resolveLeaderboardSourceRecords,
+  type LeaderboardRow,
+  type ScoreRecord,
+} from '../lib/leaderboard'
 import { supabase } from '../utils/supabase'
 
 const leaderboardList = ref<LeaderboardRow[]>([])
@@ -45,18 +50,18 @@ const fetchLeaderboard = async () => {
           .eq('status', 'visible'),
       ])
 
-    if (qaError) {
-      throw qaError
-    }
-
-    if (directedError) {
-      throw directedError
-    }
-
-    leaderboardList.value = buildLeaderboard(
-      (qaRecords || []) as ScoreRecord[],
-      (directedRecords || []) as ScoreRecord[],
+    const { freeQaRecords, directedAnswerRecords, usedDirectedFallback } = resolveLeaderboardSourceRecords(
+      (qaRecords || null) as ScoreRecord[] | null,
+      qaError,
+      (directedRecords || null) as ScoreRecord[] | null,
+      directedError,
     )
+
+    if (usedDirectedFallback) {
+      console.warn('Directed QA leaderboard source is unavailable, using free QA only.', directedError)
+    }
+
+    leaderboardList.value = buildLeaderboard(freeQaRecords, directedAnswerRecords)
   } catch (err) {
     console.error('Failed to load leaderboard:', err)
     showToast('获取排行榜失败')

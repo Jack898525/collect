@@ -12,6 +12,29 @@ export interface LeaderboardRow {
   totalAnswers: number
 }
 
+export interface LeaderboardSourceRecords {
+  freeQaRecords: ScoreRecord[]
+  directedAnswerRecords: ScoreRecord[]
+  usedDirectedFallback: boolean
+}
+
+export function resolveLeaderboardSourceRecords(
+  qaRecords: ScoreRecord[] | null,
+  qaError: unknown,
+  directedRecords: ScoreRecord[] | null,
+  directedError: unknown,
+): LeaderboardSourceRecords {
+  if (qaError) {
+    throw qaError
+  }
+
+  return {
+    freeQaRecords: qaRecords || [],
+    directedAnswerRecords: directedError ? [] : directedRecords || [],
+    usedDirectedFallback: Boolean(directedError),
+  }
+}
+
 export function buildLeaderboard(
   freeQaRecords: ScoreRecord[],
   directedAnswerRecords: ScoreRecord[],
