@@ -1,0 +1,1 @@
+ALTER TABLE qa_records ADD COLUMN is_pinned BOOLEAN DEFAULT false;
