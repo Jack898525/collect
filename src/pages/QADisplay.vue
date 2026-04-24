@@ -1,54 +1,33 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useMockData } from '../composables/useMockData'
-import { getRemainingHours } from '../lib/deadlineNotice'
+import { ref, computed, onMounted } from 'vue'
 import { supabase } from '../utils/supabase'
-
-interface QARecord {
-  id: string
-  nickname: string
-  category: string
-  sub_category: string
-  question: string
-  answer: string
-  is_adopted: boolean
-  is_pinned: boolean
-  created_at: string
-  likes?: number
-}
-
-const RANKING_DEADLINE = '2026-04-25T12:00:00+08:00'
 
 const { categories } = useMockData()
 const activeCategory = ref('全部')
-const qaList = ref<QARecord[]>([])
+const qaList = ref<any[]>([])
 const loading = ref(true)
-const isNoticeExpanded = ref(false)
-const searchQuery = ref('')
-const expandedQAs = ref<Set<string>>(new Set())
-const remainingHours = ref(getRemainingHours(RANKING_DEADLINE))
+const isNoticeExpanded = ref(false) // 默认收起
+const searchQuery = ref('') // 搜索关键词
+const expandedQAs = ref<Set<string>>(new Set()) // 记录展开回答的 ID 集合
 
-let noticeTimer: number | null = null
-
+// 切换回答展开/收起状态
 const toggleQAExpand = (id: string) => {
   if (expandedQAs.value.has(id)) {
     expandedQAs.value.delete(id)
-    return
+  } else {
+    expandedQAs.value.add(id)
   }
-
-  expandedQAs.value.add(id)
 }
 
-const updateRemainingHours = () => {
-  remainingHours.value = getRemainingHours(RANKING_DEADLINE)
-}
-
+// 展平所有一级分类用于顶部筛选栏
 const categoryTabs = computed(() => {
   const tabs = ['全部']
-  categories.forEach((category) => tabs.push(category.text))
+  categories.forEach(cat => tabs.push(cat.text))
   return tabs
 })
 
+// 从 Supabase 拉取数据
 const fetchQAList = async () => {
   try {
     loading.value = true
@@ -59,71 +38,64 @@ const fetchQAList = async () => {
       .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
 
-    if (error) {
-      throw error
-    }
-
-    qaList.value = (data || []) as QARecord[]
+    if (error) throw error
+    qaList.value = data || []
   } catch (err) {
-    console.error('Failed to fetch QA records:', err)
+    console.error('获取经验列表失败:', err)
   } finally {
     loading.value = false
   }
 }
 
+onMounted(() => {
+  fetchQAList()
+})
+
+// 筛选后的 QA 列表
 const filteredQAs = computed(() => {
   let result = qaList.value
 
+  // 1. 分类过滤
   if (activeCategory.value !== '全部') {
-    result = result.filter((qa) => qa.category === activeCategory.value)
+    result = result.filter(qa => qa.category === activeCategory.value)
   }
 
+  // 2. 关键词搜索过滤
   const query = searchQuery.value.trim().toLowerCase()
   if (query) {
-    result = result.filter((qa) => {
-      return qa.question.toLowerCase().includes(query) || qa.answer.toLowerCase().includes(query)
+    result = result.filter(qa => {
+      const q = qa.question ? qa.question.toLowerCase() : ''
+      const a = qa.answer ? qa.answer.toLowerCase() : ''
+      return q.includes(query) || a.includes(query)
     })
   }
 
   return result
 })
 
-const noticeSummary = computed(() => {
-  return `距离本次排行榜截止还有 ${remainingHours.value} 小时。近期有不少同学反馈，希望我们能提供一些更明确、更有针对性的问题方向，方便大家更好地回顾和分享自己的经验。`
-})
-
+// 格式化时间辅助函数
 const formatTime = (timeStr: string) => {
   return new Date(timeStr).toLocaleDateString('zh-CN', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit',
+    minute: '2-digit'
   })
 }
 
-onMounted(() => {
-  fetchQAList()
-  updateRemainingHours()
-  noticeTimer = window.setInterval(updateRemainingHours, 60 * 1000)
-})
-
-onUnmounted(() => {
-  if (noticeTimer) {
-    clearInterval(noticeTimer)
-  }
-})
-
+// 暴露拉取数据方法给父组件
 defineExpose({
-  fetchQAList,
+  fetchQAList
 })
 </script>
 
 <template>
   <div class="bg-gray-50 min-h-screen safe-area-bottom pb-20">
+    <!-- 搜索框区域 -->
     <div class="bg-white px-4 py-3 sticky top-[44px] z-50 border-b border-gray-100 shadow-sm flex flex-col space-y-2">
       <div class="text-xs font-bold text-primary flex items-center">
         <van-icon name="search" class="mr-1 text-sm" />
-        回答前请先搜索有没有重复问题
+        回答前请先搜索有无重复回答
       </div>
       <van-search
         v-model="searchQuery"
@@ -135,31 +107,27 @@ defineExpose({
       />
     </div>
 
+    <!-- 自定义可展开收起的多行公告 -->
     <div class="bg-[#fef3c7] text-[#d97706] px-4 py-3 border-b border-amber-200/50 shadow-sm relative">
       <div class="flex items-start">
         <van-icon name="volume-o" class="mt-0.5 mr-2 text-[16px]" />
         <div class="flex-1 text-[13px] leading-relaxed">
           <div class="font-bold mb-1">【系统公告】</div>
-          <div v-if="isNoticeExpanded" class="space-y-2 pb-4">
-            <p>
-              距离本次排行榜截止还有
-              <span class="font-bold text-amber-700">{{ remainingHours }}</span>
-              小时。近期有不少同学反馈，希望我们能提供一些更明确、更有针对性的问题方向，方便大家更好地回顾和分享自己的经验。
-            </p>
-            <p>
-              因此，我们特别整理并推出了「定向问答」栏目，围绕一些目前还没有被充分讨论、但对新生非常有价值的问题和经验点，设置了一批补充问题，希望帮助大家更轻松地找到分享切入点，也让更多实用的经验被看见。
-            </p>
-            <p>
-              欢迎大家积极参与，补充你最熟悉、最有帮助的内容。排行榜只是对大家热心分享的一份小小鼓励，更重要的是，我们希望和大家一起把这份新生经验库建设得更加完整、实用。
-            </p>
+          <div v-if="isNoticeExpanded" class="space-y-1.5 pb-4">
+            <p>1. 回答前先点击搜索框查询你要发布问题的关键词，如果已经有被采纳的可以换一个问题，也可以选择更详细一下该回答，避免重复数据。</p>
+            <p>2. 管理员后台不定时上线采纳优质答案，推荐回答详细，问题描述清楚更容易被采纳；</p>
+            <p>3. 部分一直没被采纳的回答就是过于简短了，后面的同学们可以对回答进行补充，相同问题将优先采纳详细且时间发布靠前的回答；</p>
+            <p>4. 本回答收集禁止包含违反校规的元素，最终采纳解释权归训练平台所有。</p>
+            <p class="font-bold">5. 截止排名时间为 4月24日晚上23:00。</p>
           </div>
           <div v-else class="truncate text-[#d97706] pr-10 pb-2">
-            {{ noticeSummary }}
+            1. 回答前先点击搜索框查询你要发布问题的关键词，如果已经有被采纳的可以换一个问题...
           </div>
         </div>
       </div>
-
-      <div
+      
+      <!-- 展开/收起按钮 -->
+      <div 
         class="absolute bottom-2 right-4 text-xs font-medium bg-[#fef3c7] px-1 flex items-center space-x-1 cursor-pointer"
         @click="isNoticeExpanded = !isNoticeExpanded"
       >
@@ -168,22 +136,24 @@ defineExpose({
       </div>
     </div>
 
+    <!-- 分类筛选横向滚动条 -->
     <div class="bg-white px-4 py-3 sticky top-[110px] z-40 border-b border-gray-100/50 shadow-sm/50 overflow-x-auto whitespace-nowrap hide-scrollbar flex space-x-3">
-      <div
-        v-for="cat in categoryTabs"
+      <div 
+        v-for="cat in categoryTabs" 
         :key="cat"
+        @click="activeCategory = cat"
         class="inline-flex px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer"
         :class="[
-          activeCategory === cat
-            ? 'bg-primary text-white shadow-md shadow-primary/20'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+          activeCategory === cat 
+            ? 'bg-primary text-white shadow-md shadow-primary/20' 
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         ]"
-        @click="activeCategory = cat"
       >
         {{ cat }}
       </div>
     </div>
 
+    <!-- QA 列表信息流 -->
     <div class="p-4 space-y-4">
       <div v-if="loading" class="py-20 flex flex-col items-center justify-center">
         <van-loading type="spinner" color="#3B82F6" size="24px" />
@@ -195,16 +165,18 @@ defineExpose({
         <p>{{ searchQuery ? '未找到相关经验分享' : '该分类下暂无经验分享' }}</p>
       </div>
 
-      <div
-        v-for="qa in filteredQAs"
+      <div 
         v-else
+        v-for="qa in filteredQAs" 
         :key="qa.id"
         class="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative"
       >
+        <!-- 置顶徽章 -->
         <div v-if="qa.is_pinned" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm font-bold z-10 flex items-center">
           <van-icon name="fire" class="mr-0.5" /> 置顶
         </div>
 
+        <!-- 卡片顶部：分类标签与徽章 -->
         <div class="flex justify-between items-center mb-3">
           <div class="flex items-center space-x-2 text-xs font-medium">
             <span class="text-primary bg-primary/10 px-2 py-1 rounded-md">
@@ -215,28 +187,30 @@ defineExpose({
               {{ qa.sub_category }}
             </span>
           </div>
-
+          
           <div v-if="qa.is_adopted" class="flex items-center text-xs font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded-full">
             🏆 已采纳
           </div>
         </div>
 
+        <!-- 主体内容：问答 -->
         <div class="space-y-3 mb-4">
           <h3 class="text-base font-bold text-gray-800 leading-snug">
             <span class="text-primary mr-1">Q:</span>
             {{ qa.question }}
           </h3>
           <div class="relative">
-            <p
+            <p 
               class="text-[15px] text-gray-600 leading-relaxed whitespace-pre-wrap transition-all duration-300"
               :class="{ 'line-clamp-5': !expandedQAs.has(qa.id) }"
             >
               <span class="text-secondary font-bold mr-1">A:</span>
               {{ qa.answer }}
             </p>
-
-            <div
-              v-if="qa.answer && qa.answer.length > 150"
+            
+            <!-- 展开/收起按钮 -->
+            <div 
+              v-if="qa.answer && qa.answer.length > 150" 
               class="mt-2 text-primary text-sm font-medium flex items-center cursor-pointer select-none w-fit"
               @click="toggleQAExpand(qa.id)"
             >
@@ -246,6 +220,7 @@ defineExpose({
           </div>
         </div>
 
+        <!-- 底部信息：发布者和时间 -->
         <div class="flex justify-between items-center text-xs text-gray-400 pt-3 border-t border-gray-50">
           <div class="flex items-center space-x-1">
             <van-icon name="good-job-o" size="16" />
@@ -263,34 +238,34 @@ defineExpose({
 </template>
 
 <style scoped>
+/* 隐藏横向滚动条但保留滚动功能 */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
-
 .hide-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
+/* 自定义搜索框更醒目的样式 */
 .search-bar-custom {
   border-radius: 9999px;
-  border: 2px solid rgba(59, 130, 246, 0.2);
+  border: 2px solid rgba(59, 130, 246, 0.2); /* 浅蓝色边框 */
   transition: all 0.3s ease;
 }
-
 .search-bar-custom:focus-within {
-  border-color: #3b82f6;
+  border-color: #3B82F6; /* 获取焦点时加深蓝边框 */
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
-
 :deep(.van-search__content) {
   background-color: transparent !important;
 }
 
+/* 多行文本省略样式 */
 .line-clamp-5 {
   display: -webkit-box;
   -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
+  -webkit-box-orient: vertical;  
   overflow: hidden;
 }
 </style>

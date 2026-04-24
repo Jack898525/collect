@@ -222,23 +222,26 @@ watch(activeQuestionId, async () => {
         目前还没有定向题目
       </div>
 
-      <div v-else class="p-4 overflow-x-auto whitespace-nowrap flex gap-3">
-        <div
-          v-for="question in questions"
-          :key="question.id"
-          class="min-w-[220px] max-w-[260px] rounded-xl border p-4 cursor-pointer transition-all"
-          :class="
-            activeQuestionId === question.id
-              ? 'border-primary bg-primary/5 shadow-sm'
-              : 'border-gray-100 bg-white'
-          "
-          @click="activeQuestionId = question.id"
-        >
-          <div class="text-sm font-semibold text-gray-800 whitespace-normal">{{ question.question_text }}</div>
-          <div v-if="question.description" class="text-xs text-gray-500 mt-2 whitespace-normal">
-            {{ question.description }}
-          </div>
-        </div>
+      <div v-else class="p-4">
+        <van-collapse v-model="activeQuestionId" accordion class="rounded-xl overflow-hidden border border-gray-100">
+          <van-collapse-item
+            v-for="question in questions"
+            :key="question.id"
+            :name="question.id"
+          >
+            <template #title>
+              <div 
+                class="font-semibold text-sm transition-colors whitespace-normal leading-snug" 
+                :class="activeQuestionId === question.id ? 'text-primary' : 'text-gray-800'"
+              >
+                {{ question.question_text }}
+              </div>
+            </template>
+            <div class="text-xs text-gray-500 whitespace-pre-wrap leading-relaxed">
+              {{ question.description || '暂无补充描述' }}
+            </div>
+          </van-collapse-item>
+        </van-collapse>
       </div>
     </div>
 
