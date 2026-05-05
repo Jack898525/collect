@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
+import { formatAdminStudentInfo, matchesAdminStudentInfo } from '../lib/adminStudentInfo'
 import { supabase } from '../utils/supabase'
 
 const router = useRouter()
@@ -17,8 +18,7 @@ const filteredQAList = computed(() => {
   return qaList.value.filter(qa => {
     const q = qa.question ? qa.question.toLowerCase() : ''
     const a = qa.answer ? qa.answer.toLowerCase() : ''
-    const nick = qa.nickname ? qa.nickname.toLowerCase() : ''
-    return q.includes(query) || a.includes(query) || nick.includes(query)
+    return q.includes(query) || a.includes(query) || matchesAdminStudentInfo(qa, query)
   })
 })
 
@@ -32,7 +32,7 @@ const fetchAllQA = async () => {
     loading.value = true
     const { data, error } = await supabase
       .from('qa_records')
-      .select('id, student_id, nickname, category, sub_category, question, answer, status, is_adopted, is_pinned, created_at')
+      .select('id, student_id, student_name, nickname, category, sub_category, question, answer, status, is_adopted, is_pinned, created_at')
       .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
 
@@ -193,8 +193,7 @@ const formatTime = (timeStr: string) => {
           <!-- Header -->
           <div class="flex justify-between items-start mb-2">
             <div class="text-xs text-gray-500">
-              <span class="font-bold text-gray-700 mr-2">Student ID: {{ qa.student_id }}</span>
-              <span>Nickname: {{ qa.nickname }}</span>
+              {{ formatAdminStudentInfo(qa) }}
             </div>
             <div class="flex space-x-1 text-[10px]">
               <span 
