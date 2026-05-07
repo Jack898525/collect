@@ -1,5 +1,6 @@
 export interface ScoreRecord {
   student_id: string
+  student_name?: string
   nickname: string
   is_adopted: boolean
 }
@@ -7,6 +8,7 @@ export interface ScoreRecord {
 export interface LeaderboardRow {
   rank: number
   studentId: string
+  studentName?: string
   nickname: string
   adoptedCount: number
   totalAnswers: number
@@ -39,11 +41,12 @@ export function buildLeaderboard(
   freeQaRecords: ScoreRecord[],
   directedAnswerRecords: ScoreRecord[],
 ): LeaderboardRow[] {
-  const stats = new Map<string, { nickname: string; adoptedCount: number; totalAnswers: number }>()
+  const stats = new Map<string, { studentName?: string; nickname: string; adoptedCount: number; totalAnswers: number }>()
 
   for (const record of [...freeQaRecords, ...directedAnswerRecords]) {
     if (!stats.has(record.student_id)) {
       stats.set(record.student_id, {
+        studentName: record.student_name,
         nickname: record.nickname,
         adoptedCount: 0,
         totalAnswers: 0,
@@ -51,6 +54,9 @@ export function buildLeaderboard(
     }
 
     const current = stats.get(record.student_id)!
+    if (!current.studentName && record.student_name) {
+      current.studentName = record.student_name
+    }
     current.totalAnswers += 1
 
     if (record.is_adopted) {
@@ -64,6 +70,7 @@ export function buildLeaderboard(
     .map(([studentId, value], index) => ({
       rank: index + 1,
       studentId,
+      studentName: value.studentName,
       nickname: value.nickname,
       adoptedCount: value.adoptedCount,
       totalAnswers: value.totalAnswers,

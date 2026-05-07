@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
 import { formatAdminStudentInfo, matchesAdminStudentInfo } from '../lib/adminStudentInfo'
+import { buildLeaderboard } from '../lib/leaderboard'
 import { supabase } from '../utils/supabase'
 
 const router = useRouter()
@@ -21,6 +22,8 @@ const filteredQAList = computed(() => {
     return q.includes(query) || a.includes(query) || matchesAdminStudentInfo(qa, query)
   })
 })
+
+const adminLeaderboard = computed(() => buildLeaderboard(qaList.value, []))
 
 onMounted(() => {
   fetchAllQA()
@@ -174,17 +177,53 @@ const formatTime = (timeStr: string) => {
           <van-loading type="spinner" color="#3B82F6" />
         </div>
 
-        <div v-else-if="filteredQAList.length === 0" class="py-20 text-center text-gray-400">
-          No records
-        </div>
+        <template v-else>
+          <div class="bg-white rounded-xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h2 class="text-base font-bold text-gray-800">采纳排行榜</h2>
+                <p class="text-xs text-gray-400 mt-0.5">按被采纳数排序，仅后台显示姓名和学号</p>
+              </div>
+              <van-icon name="medal-o" class="text-primary" size="22" />
+            </div>
 
-        <!-- Cards -->
-        <div 
-          v-else
-          v-for="qa in filteredQAList" 
-          :key="qa.id"
-          class="bg-white rounded-xl p-4 shadow-sm relative"
-        >
+            <div v-if="adminLeaderboard.length === 0" class="py-6 text-center text-sm text-gray-400">
+              暂无被采纳记录
+            </div>
+
+            <div v-else class="divide-y divide-gray-100">
+              <div
+                v-for="user in adminLeaderboard"
+                :key="user.studentId"
+                class="flex items-center justify-between py-3"
+              >
+                <div class="flex items-center min-w-0">
+                  <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold mr-3 shrink-0">
+                    {{ user.rank }}
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-semibold text-gray-800 truncate">{{ user.studentName || '-' }}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">学号：{{ user.studentId }}</div>
+                  </div>
+                </div>
+                <div class="text-right ml-3 shrink-0">
+                  <div class="text-xl font-bold text-primary">{{ user.adoptedCount }}</div>
+                  <div class="text-[10px] text-gray-400">被采纳数</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="filteredQAList.length === 0" class="py-20 text-center text-gray-400">
+            No records
+          </div>
+
+          <!-- Cards -->
+          <div
+            v-for="qa in filteredQAList"
+            :key="qa.id"
+            class="bg-white rounded-xl p-4 shadow-sm relative"
+          >
           <!-- Badges -->
           <div v-if="qa.is_pinned" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm font-bold z-10">
             📌 Pinned
@@ -259,7 +298,8 @@ const formatTime = (timeStr: string) => {
               </van-button>
             </div>
           </div>
-        </div>
+          </div>
+        </template>
       </div>
     </div>
   </div>

@@ -20,6 +20,22 @@ describe('buildLeaderboard', () => {
       { rank: 2, studentId: '2025002', nickname: 'B', adoptedCount: 1, totalAnswers: 1 },
     ])
   })
+
+  it('includes student names and sorts by adopted count for admin use', () => {
+    const result = buildLeaderboard(
+      [
+        { student_id: '2025001', student_name: '张三', nickname: 'A', is_adopted: true },
+        { student_id: '2025002', student_name: '李四', nickname: 'B', is_adopted: true },
+        { student_id: '2025002', student_name: '李四', nickname: 'B', is_adopted: true },
+      ],
+      [],
+    )
+
+    expect(result).toEqual([
+      { rank: 1, studentId: '2025002', studentName: '李四', nickname: 'B', adoptedCount: 2, totalAnswers: 2 },
+      { rank: 2, studentId: '2025001', studentName: '张三', nickname: 'A', adoptedCount: 1, totalAnswers: 1 },
+    ])
+  })
 })
 
 describe('resolveLeaderboardSourceRecords', () => {
